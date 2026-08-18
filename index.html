@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width", initial-scale="1.0">
+    <title> Морковный кликер</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 50%, #4CAF50 50%, #2E7D32 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* Счетчик монет */
+        .score-board {
+            font-size: 32px
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 40px
+        }
+
+        /* Морковка */
+        .carrot {
+            font-size: 160px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            filter: drop-shadow(0px 15px 10px rgba(0,0,0,0.3));
+        }
+
+        /* "Эффект сжатия морквы" */
+        .carrot:active {
+            transform: scale(0.85);
+        }
+
+        /* Магазин */
+        .shop {margin-top: 30px;}
+        button { padding: 10px 20px; font-size: 18px; cursor: pointer; 
+        }
+
+        // клик эффект
+        .click-effect {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff9800;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="score-board">Монеты: <span id="score">0</span>🥕</div>
+    <div class="carrot" id="carrot">🥕</div>
+    <div class="shop">
+        <button id="buyMultiplier">Купить усиление (Цена: <span id="cost">10</span>)</button>
+        <button id="buyAuto">Купить автофарм (Цена: <span id="autocost">50</span>) [Есть: <span id="autoCount">0</span>]</button>
+    </div>
+
+    <script>
+        let score = 0;
+        let clickPower = 1;
+        let multiplierCost = 10
+        let autoFarmerCost = 50
+        let autoFarmers = 0
+
+        window.Telegram.WebApp.ready();
+
+        window.Telegram.WebApp.expand();
+
+        const scoreElement = document.getElementById('score');
+        const carrotElement = document.getElementById('carrot');
+        const buyButton = document.getElementById('buyMultiplier');
+        const costElement = document.getElementById('cost');
+        const buyAutoButton = document.getElementById('buyAuto');
+        const autoCostElement = document.getElementById('autocost');
+        const autoCountElement = document.getElementById('autoCount');
+
+        /* логика клика */
+        carrotElement.addEventListener('click', (e) => {
+            score += clickPower;
+            scoreElement.textContent = score;
+
+            // цифры +1
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.textContent = '+' + clickPower;
+            effect.style.left = (e.clientX - 10) + 'px';
+            effect.style.top = (e.clientY - 20) + 'px';
+            document.body.appendChild(effect);
+
+            setTimeout(() => effect.remove(), 800); 
+
+            if (window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impact0ccurred('light');
+            }
+        });
+
+        buyButton.addEventListener('click', ()  => {
+            if (score >= multiplierCost) {
+                score -= multiplierCost;
+                clickPower *= 2;
+                multiplierCost *= 3;
+
+                scoreElement.textContent = score;
+                costElement.textContent = multiplierCost;
+            } else {
+                alert("Недостаточно морковок!");
+            }
+        });
+
+        buyAutoButton.addEventListener('click', ()  => {
+            if(score >= autoFarmerCost) {
+                score -= autoFarmerCost;
+                autoFarmers += 1;
+                autoFarmerCost = Math.round(autoFarmerCost * 1.5); // Цена растет на 50%
+
+                scoreElement.textContent = score;
+                autoCostElement.textContent = autoFarmerCost;
+                autoCountElement.textContent = autoFarmers;
+            } else {
+                alert("Недостаточно морковок!");
+            }
+        });
+
+        // Автоматический прирост морквы в сек
+        setInterval (() => {
+            if (autoFarmers >0) {
+                score += autoFarmers;
+                scoreElement.textContent = score;
+            }
+        }, 1000);
+        function saveGame () {
+            localStorage.setItem('clicker_score', score);
+            localStorage.setItem('clicker_clickPower',clickPower);
+            localStorage.setItem('clicker_autoFarmerCost', autoFarmerCost);
+            localStorage.setItem('clicker_multiplierCost', multiplierCost);
+            localStorage.setItem('clicker_autoFarmers', autoFarmers);
+        }
+
+        function loadGame () {
+            if (localStorage.getItem('clicker_score') !== null) {
+                score = parseInt(localStorage.getItem('clicker_score'));
+                clickPower = parseInt(localStorage.getItem('clicker_clickPower'));
+                multiplierCost = parseInt(localStorage.getItem('clicker_multiplierCost'));
+                autoFarmerCost = parseInt(localStorage.getItem('clicker_autoFarmerCost'));
+                autoFarmers = parseInt(localStorage.getItem('clicker_autoFarmers'));
+
+                scoreElement.textContent = score;
+                costElement.textContent = multiplierCost;
+                autoCostElement.textContent = autoFarmerCost;
+                autoCountElement.textContent = autoFarmers;
+            }
+        }
+
+        loadGame();
+
+        setInterval(saveGame, 5000);
+    </script>
+
+</body>
+</html>
