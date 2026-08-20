@@ -1,52 +1,208 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width", initial-scale="1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> Морковный кликер</title>
     <style>
+        *, *::before, *::after {
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-user-drag: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button, button:focus, button:active, button:visited {
+            outline: none !important;
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 50%, #4CAF50 50%, #2E7D32 100%);
-            height: 100vh;
+            background: #333;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-family: Arial, sans-serif;
+        }
+
+        .bg-blur {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('bg.jpg');
+            background-size: cover;
+            background-position: center;
+            filter: blur(20px) brightness(0.5);
+            transform: scale(1.1);
+            z-index: 0;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100dvh;
+            max-width: 430px;
+            position: relative;
             overflow: hidden;
-            user-select: none;
+            aspect-ratio: 9 / 16;
+           
+            
+            
+            z-index: 1;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            
+        }
+
+        .game-bg {
+            
+            
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100dvh;
+            object-fit: fill;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            
+            max-width: 430px;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
 
         /* Счетчик монет */
         .score-board {
-            font-size: 32px
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            margin-bottom: 40px
+            position: absolute;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            
+            
+            width: 280px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            background: url('panel.png') no-repeat center / contain;
+            
+            
+            
+            
+        }
+
+        .score-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            z-index: 2;
+        }
+        
+        /* Табло*/
+        .score-content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            height: 100%;
+            transform: translateY(-10px);
+            
+           
+        }
+
+        .coin-icon {
+           width: 32px;
+           height: 32px;
+           object-fit: contain;
+
+        }
+
+        #score {
+            font-size: 26px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000, -1px -1px 0px #000;
+            user-select: none;
         }
 
         /* Морковка */
         .carrot {
-            font-size: 160px;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-            filter: drop-shadow(0px 15px 10px rgba(0,0,0,0.3));
+           position: absolute;
+           width: 75%;
+           left: 51.2%;
+           transform: translateX(-50%);
+           top: 26.8%;
+           filter: drop-shadow(10px 18px 9px rgba(0,0,0,0.45));
+           cursor: pointer;
+           user-select: none;
+           -webkit-user-drag: none;
+           -webkit-user-select: none;
+           -webkit-tap-highlight-color: transparent;
+           transition: transform 0.1s ease, filter 0.1s ease;
+           
         }
 
         /* "Эффект сжатия морквы" */
         .carrot:active {
-            transform: scale(0.85);
+            transform: translateX(-50%) scale(0.995);
+            filter: drop-shadow(6px 10px 6px rgba(0,0,0,0.45));
         }
 
         /* Магазин */
-        .shop {margin-top: 30px;}
-        button { padding: 10px 20px; font-size: 18px; cursor: pointer; 
+        .icon-Up {
+            position: absolute;
+            width: 62px;
+            height: 62px;
+            background: #4d2b0c;
+            border-radius: 14px;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 0 #b35400, 0 5px 10px rgba(0,0,0,0.3);
+            
+            bottom: 70%;
+            right: 20px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            cursor: pointer;
+            padding: 0;
+            outline: none;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+            
+        .icon-Up img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
         }
 
-        // клик эффект
+        .icon-Up:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #b35400, 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        /* клик эффект */
         .click-effect {
             position: absolute;
             font-size: 28px;
@@ -67,27 +223,180 @@
             }
         }
 
+        .shop-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.65);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 150;
+            backdrop-filter: blur(3px);
+            transition: opacity 0.2s ease;
+        }
+
+        .shop-modal.hidden {
+            display: none;
+        }
+
+        /* Карточка магазина */
+        .shop-content {
+            background: #4d2b0c;
+            border: 3px solid #ffffff;
+            border-radius: 20px;
+            width: 85%;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            color: #fff;
+            position: relative;
+            font-family: sans-serif;
+        }
+
+        .shop-content h2 {
+            margin: 0 0 15px 0;
+            text-align: center;
+            font-size: 22px;
+            color: #ff9800;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 26px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+        }
+
+        .shop-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 14px;
+        }
+
+        .buy-btn {
+            background: #7cb342;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: bold;
+            padding: 8px 14px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #558b2f;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+
+        .buy-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #558b2f;
+        }
+
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <div class="score-board">Монеты: <span id="score">0</span>🥕</div>
-    <div class="carrot" id="carrot">🥕</div>
-    <div class="shop">
-        <button id="buyMultiplier">Купить усиление (Цена: <span id="cost">10</span>)</button>
-        <button id="buyAuto">Купить автофарм (Цена: <span id="autocost">50</span>) [Есть: <span id="autoCount">0</span>]</button>
+    <!-- Размытие -->
+    <div class="bg-blur"></div>
+
+    
+    
+    <!--центрирование-->
+    <div class="game-container">
+        <div class="game-wrapper">
+            <img src="bg.jpg" class="game-bg" alt="Фон фермы">
+            <img src="carrot.png" alt="carrot" class="carrot" id="carrot">
+            
+            <div class="score-board">           
+                <div class="score-content">
+                    <img src="coin.png" class="coin-icon" alt="Монета">
+                    <span id="score">0</span>
+                </div>
+            </div>
+        
+            <button id="openShopUp" class="icon-Up">
+                <img src="shop-icon.png" alt="Магазин">
+            </button>
+
+            <div id="shopModal" class="shop-modal hidden">
+                <div class="shop-content">
+                    <button id="closeShop" class="close-btn">&times;</button>
+                    <h2>Улучшения</h2>
+
+                    <!-- 1 Улучшение -->
+                    <div class="shop-item">
+                        <div class="shop-info">
+                            <strong>Сила клика</strong>
+                            <span>Ценв: <span id="cost">10</span>🥕</span>
+                        </div>
+                        <button id="buyMultiplier" class="buy-btn">Купить</button>
+                    </div>
+
+                    <!-- 2 Улучшение -->
+                    <div class="shop-item">
+                        <div class="shop-info">
+                            <strong>Фермер (<span id="autoCount">0</span>/сек)</strong>
+                            <span>Цена: <span id="autocost">50</span> 🥕</span>
+                        </div>
+                        <button id ="buyAuto" class="buy-btn">Купить</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Кнопка открытия таблицы лидеров-->
+            <button id="openLeaderboardBtn" class="icon-Up" style="bottom: 70%; left: 20px;">🏆</button>
+
+            <!-- окно ввода ник-->
+            <div id="nicknameModal" class="shop-modal hidden">
+                <div class="shop-content">
+                    <h2>Придумайте никнейм</h2>
+                    <input type="text" id="nicknameInput" placeholder="Ваш ник..." maxlength="15" style="width: 100%; padding: 10px; margin: 15px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+                    <button id="saveNicknameBtn" class="buy-btn" style="width: 100%;">Сохранить</button>
+                </div> 
+            </div>
+
+            <!-- Окно рейтинга-->
+            <div id="leaderboardModal" class="shop-modal hidden">
+                <div class="shop-content">
+                    <button id="closeLeaderboard" class="close-btn">&times;</button>
+                    <h2>🏆 Топ игроков</h2>
+                    <div id="leaderboardList" style="max-height: 250px; overflow-y: auto; margin-top: 15px;">
+                        <!--Здесь игроки-->
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let score = 0;
         let clickPower = 1;
-        let multiplierCost = 10
-        let autoFarmerCost = 50
-        let autoFarmers = 0
+        let multiplierCost = 10;
+        let autoFarmerCost = 50;
+        let autoFarmers = 0;
+        let autoFarmersPower = 5;
 
-        window.Telegram.WebApp.ready();
-
-        window.Telegram.WebApp.expand();
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+        }
 
         const scoreElement = document.getElementById('score');
         const carrotElement = document.getElementById('carrot');
@@ -96,26 +405,47 @@
         const buyAutoButton = document.getElementById('buyAuto');
         const autoCostElement = document.getElementById('autocost');
         const autoCountElement = document.getElementById('autoCount');
+        const shopModal = document.getElementById('shopModal');
+        const openShopUp = document.getElementById('openShopUp');
+        const closeShop = document.getElementById('closeShop');
+
+        if (openShopUp && shopModal) {
+            openShopUp.addEventListener('click', () => {
+                shopModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeShop && shopModal) {
+            closeShop.addEventListener('click', () => {
+                shopModal.classList.add('hidden');
+            });
+        }
 
         /* логика клика */
-        carrotElement.addEventListener('click', (e) => {
-            score += clickPower;
-            scoreElement.textContent = score;
+        if (carrotElement) {
+            carrotElement.addEventListener('click', (e) => {
+                score += clickPower;
+                if (scoreElement) scoreElement.textContent = score;
 
-            // цифры +1
-            const effect = document.createElement('div');
-            effect.className = 'click-effect';
-            effect.textContent = '+' + clickPower;
-            effect.style.left = (e.clientX - 10) + 'px';
-            effect.style.top = (e.clientY - 20) + 'px';
-            document.body.appendChild(effect);
+                // цифры +1
+                const wrapper = document.querySelector('.game-wrapper');
+                const rect = wrapper.getBoundingClientRect();
 
-            setTimeout(() => effect.remove(), 800); 
+                const effect = document.createElement('div');
+                effect.className = 'click-effect';
+                effect.textContent = '+' + clickPower;
+                effect.style.left = (e.clientX - rect.left - 10) + 'px';
+                effect.style.top = (e.clientY - rect.top - 20) + 'px';
+                wrapper.appendChild(effect);
 
-            if (window.Telegram.WebApp.HapticFeedback) {
-                window.Telegram.WebApp.HapticFeedback.impact0ccurred('light');
-            }
-        });
+                setTimeout(() => effect.remove(), 800); 
+
+                if (tg?.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+                
+            });
+        }
 
         buyButton.addEventListener('click', ()  => {
             if (score >= multiplierCost) {
@@ -134,11 +464,11 @@
             if(score >= autoFarmerCost) {
                 score -= autoFarmerCost;
                 autoFarmers += 1;
-                autoFarmerCost = Math.round(autoFarmerCost * 1.5); // Цена растет на 50%
+                autoFarmerCost = Math.round(autoFarmerCost * 1.4); // Цена растет на 50%
 
                 scoreElement.textContent = score;
                 autoCostElement.textContent = autoFarmerCost;
-                autoCountElement.textContent = autoFarmers;
+                autoCountElement.textContent = autoFarmers * autoFarmersPower;
             } else {
                 alert("Недостаточно морковок!");
             }
@@ -147,7 +477,7 @@
         // Автоматический прирост морквы в сек
         setInterval (() => {
             if (autoFarmers >0) {
-                score += autoFarmers;
+                score += autoFarmers * autoFarmersPower;
                 scoreElement.textContent = score;
             }
         }, 1000);
@@ -170,13 +500,138 @@
                 scoreElement.textContent = score;
                 costElement.textContent = multiplierCost;
                 autoCostElement.textContent = autoFarmerCost;
-                autoCountElement.textContent = autoFarmers;
+                if (autoCountElement) autoCountElement.textContent = autoFarmers * autoFarmersPower;
             }
         }
 
         loadGame();
 
         setInterval(saveGame, 5000);
+
+        // подключение к supavase
+        const SUPABASE_URL ='https://wsmwkvxibzpdmglkdsbr.supabase.co';
+        const SUPABASE_KEY ='sb_publishable_-PGQ7x1XVUmk40oEJbwonA_1hy__7Rw';
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Элементы
+        let playerNickname= localStorage.getItem('clicker_nickname') || '';
+        const nicknameModal = document.getElementById('nicknameModal');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const saveNicknameBtn = document.getElementById('saveNicknameBtn');
+
+        const leaderboardModal = document.getElementById('leaderboardModal');
+        const openLeaderboardBtn = document.getElementById('openLeaderboardBtn');
+        const closeLeaderboard =document.getElementById('closeLeaderboard');
+        const leaderboardList = document.getElementById('leaderboardList');
+
+        // Уникальный айди
+        function getUserId() {
+            if(window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+                return 'tg_' + window.Telegram.WebApp.initDataUnsafe.user.id;
+            }
+            let localId = localStorage.getItem('clicker_user_id');
+            if (!localId) {
+                localId = 'usr_' + Math.random().toString(36).substring(2,9);
+                localStorage.setItem('clicker_user_id', localId);
+            }
+            return localId;
+        }
+
+        // Проверка ника
+        function checkNickname() {
+            if(!playerNickname) {
+                if(window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name) {
+                    nicknameInput.value = window.Telegram.WebApp.initDataUnsafe.user.first_name;
+                }
+                nicknameModal.classList.remove('hidden');
+            }
+        }
+
+        // Сохранение ника
+        saveNicknameBtn.addEventListener('click', () => {
+            const val = nicknameInput.value.trim();
+            if (val.length > 0) {
+                playerNickname = val;
+                localStorage.setItem('clicker_nickname', playerNickname);
+                nicknameModal.classList.add('hidden');
+                sendScoreToSupabase();
+            }
+        });
+
+        // Отправка очков в базу
+        async function sendScoreToSupabase() {
+            if(!playerNickname) return;
+
+            const userId = getUserId();
+
+            // Обновление очков
+            await db.from('leaderboard').upsert({
+                user_id: userId,
+                nickname: playerNickname,
+                score: score
+            }, {onConflict: 'user_id'});
+        }
+
+        // Получение Топ-10 из базы
+        async function loadleaderboard() {
+            leaderboardList.innerHTML = "Загрузка...";
+
+            const { data, error } = await db
+                .from('leaderboard')
+                .select('nickname, score')
+                .order('score', { ascending: false})
+                .limit(10);
+
+            if (error || !data) {
+                leaderboardList.innerHTML = "Не удалось загрузить";
+                return;
+            }
+
+            leaderboardList.innerHTML = "";
+            data.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.style.cssText = "display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;";
+                row.innerHTML = `
+                    <span><b>#${index + 1}</b> ${item.nickname}</span>
+                    <span><b>${item.score}</b> 🥕</span>
+                `;
+                leaderboardList.appendChild(row);          
+            });
+        }
+
+        // Обработчики окон
+        openLeaderboardBtn.addEventListener('click', () => {
+            leaderboardModal.classList.remove('hidden');
+            loadleaderboard();
+        });
+
+        closeLeaderboard.addEventListener('click', () => {
+            leaderboardModal.classList.add('hidden');
+        });
+
+        // Автосохранение очков базы
+        setInterval(sendScoreToSupabase, 10000);
+
+        // Запуск проверки ника при входе
+        checkNickname();
+
+        async function registerUser() {
+            const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+            if (tgUser) {
+                const userId = 'tg_' + tgUser.id;
+
+                await db.from('users').upsert({
+                    user_id: userId,
+                    username: tgUser.username || null,
+                    first_name: tgUser.first_name || 'Без имени',
+                    last_seen: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            }
+        }
+
+        registerUser();
+        
     </script>
 
 </body>
